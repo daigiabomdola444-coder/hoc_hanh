@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Space - Master Edition</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --card-bg: #131c2e;
+            --border-color: #24334d;
+            --accent-blue: #38bdf8;
+            --accent-purple: #c084fc;
+            --accent-green: #4ade80;
+            --accent-red: #f87171;
+            --accent-orange: #fb923c;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar - Danh sách môn */
+        .sidebar { width: 260px; background-color: #060a12; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 15px; }
+        .brand { font-size: 1.2rem; font-weight: 700; color: var(--accent-blue); display: flex; align-items: center; gap: 10px; margin-bottom: 25px; }
+        .subject-list { flex: 1; overflow-y: auto; list-style: none; }
+        .subject-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-muted); margin-bottom: 6px; }
+        .subject-item:hover, .subject-item.active { background-color: var(--card-bg); color: var(--accent-blue); font-weight: 600; }
+        .btn-add-subject { background: linear-gradient(135deg, #0284c7, #6366f1); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        /* Main Vertical Workspace */
+        .main-content { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 25px; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        
+        /* Stats Banner */
+        .stats-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 15px 20px; display: flex; align-items: center; gap: 15px; }
+        .stat-icon { font-size: 1.8rem; padding: 10px; border-radius: 8px; background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); }
+
+        /* Vertical Section Card */
+        .section-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 15px; }
+        .section-title { font-size: 1.15rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .section-title i { color: var(--accent-blue); margin-right: 8px; }
+
+        /* Inputs & Buttons */
+        .input-dark { background: #090d16; border: 1px solid var(--border-color); color: var(--text-main); padding: 9px 12px; border-radius: 6px; outline: none; }
+        .btn { background: var(--accent-blue); color: #090d16; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+        .btn-purple { background: linear-gradient(135deg, var(--accent-purple), #818cf8); color: white; }
+
+        /* Timers */
+        .countdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        .timer-card { background: #090d16; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 15px; position: relative; }
+        .timer-title { font-weight: 600; color: var(--accent-blue); font-size: 0.95rem; }
+        .timer-time { font-size: 1.3rem; font-weight: 800; color: var(--accent-orange); margin: 6px 0; }
+
+        /* Files & Progress */
+        .file-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; list-style: none; }
+        .file-item { background: #090d16; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        
+        .chapter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #090d16; padding: 8px 12px; border-radius: 6px; }
+        .progress-bar { flex: 1; height: 10px; background: var(--card-bg); border-radius: 5px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple)); }
+
+        /* Weak Tags */
+        .weak-tag-item { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); border: 1px solid rgba(248, 113, 113, 0.3); padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; }
+
+        /* FULLSCREEN QUIZ SUB-PAGE */
+        .quiz-subpage { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-dark); z-index: 999; display: none; flex-direction: column; padding: 40px; overflow-y: auto; }
+        .quiz-subpage.active { display: flex; }
+        .quiz-config-box { max-width: 700px; margin: auto; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; display: flex; flex-direction: column; gap: 20px; width: 100%; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .checkbox-group { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; background: #090d16; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .checkbox-label { font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand"><i class="fa-solid fa-brain"></i> StudySpace Pro</div>
+        <ul class="subject-list" id="subjectList"></ul>
+        <button class="btn-add-subject" onclick="addNewSubject()"><i class="fa-solid fa-plus"></i> Thêm Môn Học</button>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="main-content">
+        <div class="header-bar">
+            <div>
+                <h1 id="currentSubjectTitle" style="font-size: 1.8rem;">Đang tải...</h1>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Hệ thống theo dõi & Luyện tập học tập cá nhân hóa</p>
+            </div>
+            <button class="btn" style="background: var(--accent-red); color: white;" onclick="deleteCurrentSubject()"><i class="fa-solid fa-trash"></i> Xóa Môn</button>
+        </div>
+
+        <!-- 1. Stats Banner -->
+        <div class="stats-banner">
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--accent-orange); background: rgba(251, 146, 60, 0.1);"><i class="fa-solid fa-fire"></i></div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Chuỗi Học Tập</div>
+                    <div style="font-size: 1.3rem; font-weight: 800;" id="streakDisplay">0 Ngày 🔥</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-orange);">Hoàn thành 1 bài test để giữ chuỗi!</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--accent-purple); background: rgba(192, 132, 252, 0.1);"><i class="fa-solid fa-square-check"></i></div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Bài Test Đã Làm</div>
+                    <div style="font-size: 1.3rem; font-weight: 800;" id="completedTestsDisplay">0 Bài</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Tổng số lần luyện tập</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--accent-green); background: rgba(74, 222, 128, 0.1);"><i class="fa-solid fa-chart-line"></i></div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Thành Thạo Trung Bình</div>
+                    <div style="font-size: 1.3rem; font-weight: 800;" id="avgScoreDisplay">0%</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-green);">Đánh giá tổng thể</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Lịch Thi & Đếm Ngược -->
+        <div class="section-card">
+            <div class="section-title">
+                <span><i class="fa-solid fa-clock"></i> Mốc Thời Gian & Lịch Thi Cụ Thể</span>
+                <button class="btn" onclick="addTimerPrompt()"><i class="fa-solid fa-plus"></i> Thêm Lịch Thi</button>
+            </div>
+            <div class="countdown-grid" id="timerGrid"></div>
+        </div>
+
+        <!-- 3. Bài Giảng Đầu Vào -->
+        <div class="section-card">
+            <div class="section-title">
+                <span><i class="fa-solid fa-folder-open"></i> Tài Liệu Bài Giảng</span>
+                <button class="btn" onclick="document.getElementById('fileInput').click()"><i class="fa-solid fa-upload"></i> Tải Bài Giảng</button>
+                <input type="file" id="fileInput" hidden multiple onchange="handleFileUpload(event)">
+            </div>
+            <ul class="file-list" id="fileList"></ul>
+        </div>
+
+        <!-- 4. Phân Tích Kiến Thức & Dạng Bài Yếu (ĐÃ THÊM TƯƠNG TÁC THÊM/SỬA/XÓA) -->
+        <div class="section-card">
+            <div class="section-title">
+                <span><i class="fa-solid fa-chart-pie"></i> Phân Tích Kiến Thức & Dạng Bài Yếu</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Cột Chương / Thành thạo -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="font-size: 0.9rem; color: var(--text-muted);">Độ thành thạo các chương:</h4>
+                        <button class="btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addChapterPrompt()"><i class="fa-solid fa-plus"></i> Thêm Chương</button>
+                    </div>
+                    <div id="chapterContainer"></div>
+                </div>
+
+                <!-- Cột Dạng Bài Yếu -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="font-size: 0.9rem; color: var(--text-muted);">Các dạng bài yếu:</h4>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <input type="text" id="newWeakTagInput" class="input-dark" style="flex:1; font-size:0.85rem;" placeholder="Nhập dạng bài yếu muốn thêm...">
+                        <button class="btn" onclick="addWeakTagManual()"><i class="fa-solid fa-plus"></i> Thêm</button>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="weakTagBox"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Kế Hoạch Todo List -->
+        <div class="section-card">
+            <div class="section-title">
+                <span><i class="fa-solid fa-calendar-check"></i> Todo List Kế Hoạch Hôm Nay</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="todoInput" class="input-dark" style="flex:1;" placeholder="Nhập gạch đầu dòng công việc...">
+                <button class="btn" onclick="addTodo()"><i class="fa-solid fa-plus"></i> Thêm</button>
+            </div>
+            <div id="todoList" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
+        </div>
+
+        <!-- 6. Quiz Studio -->
+        <div class="section-card" style="border-color: var(--accent-purple);">
+            <div class="section-title">
+                <span><i class="fa-solid fa-graduation-cap" style="color: var(--accent-purple);"></i> Studio Bài Kiểm Tra AI</span>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Tự chọn phạm vi ôn tập chi tiết theo từng chương/dạng bài yếu mong muốn.</p>
+            <div>
+                <button class="btn btn-purple" style="font-size: 1rem; padding: 10px 20px;" onclick="openQuizSubpage()">
+                    <i class="fa-solid fa-play"></i> Bắt Đầu Tạo Bài Kiểm Tra Custom
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUB-PAGE: QUIZ STUDIO (CÁ NHÂN HÓA SÂU CÁC CHỦ ĐỀ) -->
+    <div class="quiz-subpage" id="quizSubpage">
+        <!-- Step 1: Config -->
+        <div class="quiz-config-box" id="quizStepConfig">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="color: var(--accent-purple);"><i class="fa-solid fa-sliders"></i> Tùy Chỉnh Phạm Vi Bài Kiểm Tra</h2>
+                <i class="fa-solid fa-xmark" style="font-size: 1.5rem; cursor: pointer;" onclick="closeQuizSubpage()"></i>
+            </div>
+
+            <div class="form-group">
+                <label style="font-weight: 600;">1. Chọn cụ thể Chương / Chủ đề / Dạng bài muốn làm bài test:</label>
+                <div class="checkbox-group" id="quizTopicCheckboxes">
+                    <!-- Javascript sẽ tự động load danh sách Chương và Dạng bài yếu vào đây -->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="font-weight: 600;">2. Chọn dạng loại câu hỏi khởi tạo:</label>
+                <div style="display: flex; gap: 15px;">
+                    <label class="checkbox-label"><input type="checkbox" id="fmtMCQ" checked> Trắc nghiệm (4 đáp án)</label>
+                    <label class="checkbox-label"><input type="checkbox" id="fmtTF" checked> Đúng / Sai</label>
+                    <label class="checkbox-label"><input type="checkbox" id="fmtShort"> Trả lời ngắn</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="font-weight: 600;">3. Số lượng câu hỏi:</label>
+                <input type="number" id="quizNumQuestions" class="input-dark" value="5" min="1" max="15">
+            </div>
+
+            <button class="btn btn-purple" style="width: 100%; padding: 12px;" onclick="startTakingQuiz()">
+                <i class="fa-solid fa-bolt"></i> Tạo Đề Thi Theo Lựa Chọn
+            </button>
+        </div>
+
+        <!-- Step 2: Doing Quiz -->
+        <div class="quiz-config-box" id="quizStepTaking" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                <span style="font-weight: 600; color: var(--accent-blue);">Bài Kiểm Tra Đang Tiến Hành</span>
+                <span style="color: var(--accent-orange); font-weight: bold;">Thời gian: 10:00</span>
+            </div>
+            <div id="quizQuestionBody" style="display: flex; flex-direction: column; gap: 15px;"></div>
+            <button class="btn" style="background: var(--accent-green); color: #090d16;" onclick="submitQuiz()">
+                <i class="fa-solid fa-paper-plane"></i> Nộp Bài & Xem Báo Cáo
+            </button>
+        </div>
+
+        <!-- Step 3: Result & Confirm -->
+        <div class="quiz-config-box" id="quizStepEval" style="display: none;">
+            <h2 style="color: var(--accent-green);"><i class="fa-solid fa-square-poll-vertical"></i> Kết Quả & Đánh Giá Điểm Yếu</h2>
+            <div id="quizResultSummary"></div>
+            
+            <div style="background: rgba(248, 113, 113, 0.1); border: 1px solid var(--accent-red); padding: 15px; border-radius: 8px;">
+                <h4 style="color: var(--accent-red); margin-bottom: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Kiến thức phát hiện chưa vững:</h4>
+                <p id="detectedWeaknessText" style="font-size: 0.9rem; color: var(--text-main);"></p>
+            </div>
+
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Xác nhận tự động lưu kiến thức này vào Danh sách bài yếu và Todo List?</p>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="flex:1; background: var(--accent-green); color:#090d16;" onclick="confirmAddWeakness(true)">
+                    <i class="fa-solid fa-check"></i> Xác Nhận Lưu
+                </button>
+                <button class="btn" style="flex:1; background: var(--border-color); color: var(--text-main);" onclick="confirmAddWeakness(false)">
+                    Bỏ Qua
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'STUDY_SPACE_MASTER_V4';
+
+        let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+            activeSubjectId: 'sub_1',
+            subjects: [
+                {
+                    id: 'sub_1',
+                    name: 'Triết Học Mác - Lênin',
+                    streak: 2,
+                    completedTests: 3,
+                    timers: [
+                        { id: 101, title: 'Thi Giữa Kỳ', datetime: '2026-10-15T08:00' },
+                        { id: 102, title: 'Thi Cuối Kỳ (Chiều)', datetime: '2026-11-20T13:30' }
+                    ],
+                    files: ['Giaotrinh_Chuong1.pdf', 'Tomtat_Duyvat.docx'],
+                    chapters: [
+                        { name: 'Chương 1: CN Duy vật biện chứng', score: 85 },
+                        { name: 'Chương 2: Phép biện chứng duy vật (Nửa đầu)', score: 50 },
+                        { name: 'Chương 2: Phép biện chứng duy vật (Nửa sau)', score: 30 },
+                        { name: 'Chương 3: CN Duy vật lịch sử', score: 60 }
+                    ],
+                    weakTags: ['Phủ định của phủ định', 'Hình thái KT-XH'],
+                    todos: [
+                        { id: 1, text: 'Ôn tập nửa sau Chương 2', done: false }
+                    ]
+                }
+            ]
+        };
+
+        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
+        function getActiveSubject() { return appData.subjects.find(s => s.id === appData.activeSubjectId) || appData.subjects[0]; }
+
+        // --- SIDEBAR ---
+        function renderSidebar() {
+            const list = document.getElementById('subjectList');
+            list.innerHTML = '';
+            appData.subjects.forEach(sub => {
+                const li = document.createElement('li');
+                li.className = `subject-item ${sub.id === appData.activeSubjectId ? 'active' : ''}`;
+                li.innerHTML = `<span><i class="fa-solid fa-book"></i> ${sub.name}</span>`;
+                li.onclick = () => { appData.activeSubjectId = sub.id; saveData(); renderAll(); };
+                list.appendChild(li);
+            });
+        }
+
+        function addNewSubject() {
+            const name = prompt("Nhập tên môn học mới:");
+            if (name && name.trim()) {
+                const newSub = {
+                    id: 'sub_' + Date.now(),
+                    name: name.trim(),
+                    streak: 0,
+                    completedTests: 0,
+                    timers: [],
+                    files: [],
+                    chapters: [{ name: 'Chương 1: Khái niệm mở đầu', score: 50 }],
+                    weakTags: [],
+                    todos: []
+                };
+                appData.subjects.push(newSub);
+                appData.activeSubjectId = newSub.id;
+                saveData();
+                renderAll();
+            }
+        }
+
+        function deleteCurrentSubject() {
+            if (appData.subjects.length <= 1) return alert("Phải giữ lại ít nhất 1 môn!");
+            if (confirm("Bạn có chắc muốn xóa môn này?")) {
+                appData.subjects = appData.subjects.filter(s => s.id !== appData.activeSubjectId);
+                appData.activeSubjectId = appData.subjects[0].id;
+                saveData();
+                renderAll();
+            }
+        }
+
+        // --- DASHBOARD RENDER ---
+        function renderDashboard() {
+            const current = getActiveSubject();
+            document.getElementById('currentSubjectTitle').innerText = current.name;
+
+            // Banner Stats
+            document.getElementById('streakDisplay').innerText = `${current.streak || 0} Ngày 🔥`;
+            document.getElementById('completedTestsDisplay').innerText = `${current.completedTests || 0} Bài`;
+            const avg = current.chapters.length ? Math.round(current.chapters.reduce((a, b) => a + b.score, 0) / current.chapters.length) : 0;
+            document.getElementById('avgScoreDisplay').innerText = `${avg}%`;
+
+            // Timers
+            const timerGrid = document.getElementById('timerGrid');
+            timerGrid.innerHTML = current.timers.length ? '' : '<p style="color:var(--text-muted); font-size:0.85rem;">Chưa có lịch thi nào.</p>';
+            current.timers.forEach((t, idx) => {
+                timerGrid.innerHTML += `
+                    <div class="timer-card">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span class="timer-title">${t.title}</span>
+                            <i class="fa-solid fa-xmark" style="cursor:pointer; color:var(--text-muted);" onclick="deleteTimer(${idx})"></i>
+                        </div>
+                        <div class="timer-time">${calculateTimeLeft(t.datetime)}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${formatDateTime(t.datetime)}</div>
+                    </div>
+                `;
+            });
+
+            // Files
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = current.files.length ? '' : '<span style="color:var(--text-muted); font-size:0.85rem;">Chưa có file bài giảng nào.</span>';
+            current.files.forEach((f, idx) => {
+                fileList.innerHTML += `<li class="file-item"><i class="fa-regular fa-file-lines"></i> ${f} <i class="fa-solid fa-xmark" style="cursor:pointer; color:var(--accent-red);" onclick="removeFile(${idx})"></i></li>`;
+            });
+
+            // Chapters (Render + Tương tác chỉnh sửa/xóa)
+            const chapterBox = document.getElementById('chapterContainer');
+            chapterBox.innerHTML = '';
+            current.chapters.forEach((ch, idx) => {
+                chapterBox.innerHTML += `
+                    <div class="chapter-row">
+                        <span style="font-size:0.85rem; flex:1;">${ch.name}</span>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${ch.score}%;"></div></div>
+                        <span style="font-size:0.85rem; font-weight:bold; color:var(--accent-blue); width:40px; text-align:right;">${ch.score}%</span>
+                        <i class="fa-solid fa-pen-to-square" style="cursor:pointer; color:var(--text-muted); font-size:0.8rem;" title="Sửa điểm%" onclick="editChapterScore(${idx})"></i>
+                        <i class="fa-solid fa-trash" style="cursor:pointer; color:var(--accent-red); font-size:0.8rem;" title="Xóa chương" onclick="deleteChapter(${idx})"></i>
+                    </div>
+                `;
+            });
+
+            // Weak Tags (Render + Tương tác Xóa)
+            const tagBox = document.getElementById('weakTagBox');
+            tagBox.innerHTML = current.weakTags.length ? '' : '<span style="color:var(--text-muted); font-size:0.85rem;">Chưa có dạng bài yếu</span>';
+            current.weakTags.forEach((t, idx) => {
+                tagBox.innerHTML += `
+                    <span class="weak-tag-item">
+                        <i class="fa-solid fa-bug"></i> ${t}
+                        <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="deleteWeakTag(${idx})"></i>
+                    </span>
+                `;
+            });
+
+            // Todos
+            const todoList = document.getElementById('todoList');
+            todoList.innerHTML = current.todos.length ? '' : '<span style="color:var(--text-muted); font-size:0.85rem;">Chưa có việc cần làm</span>';
+            current.todos.forEach((t, idx) => {
+                todoList.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; background:#090d16; padding:10px; border-radius:6px; font-size:0.9rem; ${t.done ? 'opacity:0.5; text-decoration:line-through;' : ''}">
+                        <span onclick="toggleTodo(${idx})" style="cursor:pointer;"><i class="fa-regular ${t.done ? 'fa-square-check' : 'fa-square'}"></i> ${t.text}</span>
+                        <i class="fa-solid fa-trash" style="cursor:pointer; color:var(--text-muted);" onclick="deleteTodo(${idx})"></i>
+                    </div>
+                `;
+            });
+        }
+
+        // --- CÁC HÀM TƯƠNG TÁC QUẢN LÝ CHƯƠNG & DẠNG BÀI YẾU ---
+        function addChapterPrompt() {
+            const name = prompt("Nhập tên chương / phần kiến thức mới:");
+            if (name && name.trim()) {
+                const scoreStr = prompt("Nhập độ thuộc bài dự kiến (0 - 100%):", "50");
+                const score = parseInt(scoreStr) || 50;
+                getActiveSubject().chapters.push({ name: name.trim(), score: Math.min(100, Math.max(0, score)) });
+                saveData();
+                renderDashboard();
+            }
+        }
+
+        function editChapterScore(idx) {
+            const ch = getActiveSubject().chapters[idx];
+            const val = prompt(`Cập nhật % thuộc bài cho "${ch.name}":`, ch.score);
+            if (val !== null) {
+                ch.score = Math.min(100, Math.max(0, parseInt(val) || 0));
+                saveData();
+                renderDashboard();
+            }
+        }
+
+        function deleteChapter(idx) {
+            getActiveSubject().chapters.splice(idx, 1);
+            saveData();
+            renderDashboard();
+        }
+
+        function addWeakTagManual() {
+            const input = document.getElementById('newWeakTagInput');
+            if (input.value.trim()) {
+                const current = getActiveSubject();
+                if (!current.weakTags.includes(input.value.trim())) {
+                    current.weakTags.push(input.value.trim());
+                    saveData();
+                    renderDashboard();
+                }
+                input.value = '';
+            }
+        }
+
+        function deleteWeakTag(idx) {
+            getActiveSubject().weakTags.splice(idx, 1);
+            saveData();
+            renderDashboard();
+        }
+
+        // --- TIMER & FILES & TODOS ---
+        function addTimerPrompt() {
+            const title = prompt("Tên mốc lịch thi:");
+            if (!title) return;
+            const datetime = prompt("Ngày giờ (YYYY-MM-DDTHH:mm):", "2026-10-25T08:00");
+            if (datetime) {
+                getActiveSubject().timers.push({ id: Date.now(), title, datetime });
+                saveData();
+                renderDashboard();
+            }
+        }
+        function deleteTimer(idx) { getActiveSubject().timers.splice(idx, 1); saveData(); renderDashboard(); }
+        function calculateTimeLeft(dtStr) {
+            const diff = new Date(dtStr).getTime() - new Date().getTime();
+            if (isNaN(diff)) return "Sai định dạng";
+            if (diff <= 0) return "Đã đến hạn!";
+            return `${Math.floor(diff / (1000 * 60 * 60 * 24))} ngày ${Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))} giờ`;
+        }
+        function formatDateTime(dtStr) {
+            const d = new Date(dtStr);
+            return isNaN(d) ? dtStr : d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+        function handleFileUpload(e) {
+            Array.from(e.target.files).forEach(f => getActiveSubject().files.push(f.name));
+            saveData(); renderDashboard();
+        }
+        function removeFile(idx) { getActiveSubject().files.splice(idx, 1); saveData(); renderDashboard(); }
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            if (input.value.trim()) {
+                getActiveSubject().todos.push({ id: Date.now(), text: input.value.trim(), done: false });
+                input.value = ''; saveData(); renderDashboard();
+            }
+        }
+        function toggleTodo(idx) { getActiveSubject().todos[idx].done = !getActiveSubject().todos[idx].done; saveData(); renderDashboard(); }
+        function deleteTodo(idx) { getActiveSubject().todos.splice(idx, 1); saveData(); renderDashboard(); }
+
+        // --- SUB-PAGE QUIZ STUDIO (PHẠM VI CÁ NHÂN HÓA SÂU) ---
+        let detectedWeaknessTemp = "";
+
+        function openQuizSubpage() {
+            const current = getActiveSubject();
+            const box = document.getElementById('quizTopicCheckboxes');
+            box.innerHTML = '';
+
+            // Tải danh sách Chương để người dùng tùy chọn tích
+            box.innerHTML += `<div style="font-weight:bold; color:var(--accent-blue); font-size:0.85rem; margin-top:4px;">Theo từng Chương:</div>`;
+            current.chapters.forEach((ch, idx) => {
+                box.innerHTML += `<label class="checkbox-label"><input type="checkbox" class="quiz-topic-cb" value="${ch.name}" checked> ${ch.name}</label>`;
+            });
+
+            // Tải danh sách Dạng bài yếu để tích hợp vào đề
+            if (current.weakTags.length) {
+                box.innerHTML += `<div style="font-weight:bold; color:var(--accent-red); font-size:0.85rem; margin-top:10px;">Theo các Dạng bài yếu:</div>`;
+                current.weakTags.forEach(tag => {
+                    box.innerHTML += `<label class="checkbox-label"><input type="checkbox" class="quiz-topic-cb" value="Yếu: ${tag}" checked> Dạng yếu: ${tag}</label>`;
+                });
+            }
+
+            document.getElementById('quizSubpage').classList.add('active');
+            document.getElementById('quizStepConfig').style.display = 'flex';
+            document.getElementById('quizStepTaking').style.display = 'none';
+            document.getElementById('quizStepEval').style.display = 'none';
+        }
+
+        function closeQuizSubpage() { document.getElementById('quizSubpage').classList.remove('active'); }
+
+        function startTakingQuiz() {
+            const selectedTopics = Array.from(document.querySelectorAll('.quiz-topic-cb:checked')).map(cb => cb.value);
+            if (!selectedTopics.length) return alert("Vui lòng tích chọn ít nhất 1 chương hoặc dạng bài yếu để ôn!");
+
+            document.getElementById('quizStepConfig').style.display = 'none';
+            document.getElementById('quizStepTaking').style.display = 'flex';
+
+            const body = document.getElementById('quizQuestionBody');
+            body.innerHTML = `
+                <p style="font-size:0.85rem; color:var(--accent-purple);">Đề thi được tạo cá nhân hóa dựa trên: <strong>${selectedTopics.join(', ')}</strong></p>
+                <div style="background:#090d16; padding:15px; border-radius:8px;">
+                    <p style="font-weight:600; margin-bottom:10px;">Câu 1: Câu hỏi kiểm tra trích xuất từ nội dung bạn đã chọn?</p>
+                    <label class="checkbox-label" style="margin-bottom:6px;"><input type="radio" name="q1" value="A"> A. Phương án trắc nghiệm A</label>
+                    <label class="checkbox-label" style="margin-bottom:6px;"><input type="radio" name="q1" value="B"> B. Phương án trắc nghiệm B</label>
+                </div>
+            `;
+        }
+
+        function submitQuiz() {
+            document.getElementById('quizStepTaking').style.display = 'none';
+            document.getElementById('quizStepEval').style.display = 'flex';
+
+            const current = getActiveSubject();
+            current.completedTests = (current.completedTests || 0) + 1;
+            current.streak = (current.streak || 0) + 1;
+
+            detectedWeaknessTemp = "Mối quan hệ giữa lực lượng sản xuất & quan hệ sản xuất";
+
+            document.getElementById('quizResultSummary').innerHTML = `
+                <p style="font-size:1.1rem; margin-bottom:10px;">Kết quả bài test: <strong style="color:var(--accent-blue);">80% Hoàn thành tốt</strong></p>
+            `;
+            document.getElementById('detectedWeaknessText').innerText = detectedWeaknessTemp;
+            saveData();
+        }
+
+        function confirmAddWeakness(accept) {
+            if (accept) {
+                const current = getActiveSubject();
+                if (!current.weakTags.includes(detectedWeaknessTemp)) {
+                    current.weakTags.push(detectedWeaknessTemp);
+                    current.todos.push({ id: Date.now(), text: `Ôn thêm: ${detectedWeaknessTemp}`, done: false });
+                    saveData();
+                }
+            }
+            closeQuizSubpage();
+            renderDashboard();
+        }
+
+        function renderAll() { renderSidebar(); renderDashboard(); }
+        renderAll();
+    </script>
+</body>
+</html>
